@@ -7,4 +7,5 @@ urlpatterns = [
     path('category/<int:pk>/<slug:slug>',
          CategoryDetail.as_view(),
          name='category_detail'),
+    path('tag/<slug:slug>', TagDetail.as_view(), name='tag_detail'),
 ]
