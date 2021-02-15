@@ -48,6 +48,7 @@ class Post(models.Model):
                                  related_name='posts')
     tag = models.ManyToManyField(Tag, related_name='posts', blank=True)
     slider_post = models.BooleanField(default=False)
+    hit = models.PositiveIntegerField(default=0)
 
     def save(self, *args, **kwargs):
         self.slug = slugify(self.title)
@@ -55,3 +56,6 @@ class Post(models.Model):
 
     def __str__(self):
         return self.title
+
+    def post_tag(self):
+        return ','.join(str(tag) for tag in self.tag.all())
