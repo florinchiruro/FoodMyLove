@@ -1,19 +1,21 @@
 from django.shortcuts import render, get_object_or_404
 from django.views.generic import TemplateView, ListView, DetailView, CreateView, UpdateView, DeleteView
 from .models import Post, Category, Tag
-from .forms import PostCreationForm, PostUpdateForm
+from .forms import PostCreationForm, PostUpdateForm, CreateCommentForm
 from django.utils.decorators import method_decorator
 from django.contrib.auth.decorators import login_required
 from django.template.defaultfilters import slugify
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from django.db.models import F
+from django.db.models import F, Q
+from django.views.generic.edit import FormMixin
 
 
 class IndexView(ListView):
     template_name = 'posts/index.html'
     model = Post
     context_object_name = 'posts'
+    paginate_by = 3
 
     def get_context_data(self, *, object_list=None, **kwargs):
         context = super(IndexView, self).get_context_data(**kwargs)
@@ -21,10 +23,11 @@ class IndexView(ListView):
         return context
 
 
-class PostDetail(DetailView):
+class PostDetail(DetailView, FormMixin):
     template_name = 'posts/detail.html'
     model = Post
     context_object_name = 'single'
+    form_class = CreateCommentForm
 
     def get(self, request, *args, **kwargs):
         self.hit = Post.objects.filter(id=self.kwargs['pk']).update(
@@ -33,13 +36,39 @@ class PostDetail(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(PostDetail, self).get_context_data(**kwargs)
+        context['previous'] = Post.objects.filter(
+            id__lt=self.kwargs['pk']).order_by('-pk').first()
+        context['next'] = Post.objects.filter(
+            id__gt=self.kwargs['pk']).order_by('pk').first()
+        context['form'] = self.get_form()
         return context
+
+    def form_valid(self, form):
+        form.instance.post = self.object
+        form.save()
+        return super(PostDetail, self).form_valid(form)
+
+    def post(self, *args, **kwargs):
+        self.object = self.get_object()
+        form = self.get_form()
+        if form.is_valid():
+            return self.form_valid(form)
+        else:
+            return self.form_valid(form)
+
+    def get_success_url(self):
+        return reverse('detail',
+                       kwargs={
+                           'pk': self.object.pk,
+                           'slug': self.object.slug
+                       })
 
 
 class CategoryDetail(ListView):
     model = Post
     template_name = 'categories/category_detail.html'
     context_object_name = 'posts'
+    paginate_by = 3
 
     def get_queryset(self):
         self.category = get_object_or_404(Category, pk=self.kwargs['pk'])
@@ -56,6 +85,7 @@ class TagDetail(ListView):
     model = Post
     template_name = 'tags/tag_detail.html'
     context_object_name = 'posts'
+    paginate_by = 3
 
     def get_queryset(self):
         self.tag = get_object_or_404(Tag, slug=self.kwargs['slug'])
@@ -153,3 +183,20 @@ class DeletePostView(DeleteView):
         if self.object.user != request.user:
             return HttpResponseRedirect('/')
         return super(DeletePostView, self).get(request, *args, **kwargs)
+
+
+class SearchView(ListView):
+    model = Post
+    template_name = 'posts/search.html'
+    context_object_name = 'posts'
+    paginate_by = 3
+
+    def get_queryset(self):
+        query = self.request.GET.get('q')
+
+        if query:
+            return Post.objects.filter(
+                Q(title__icontains=query) | Q(content__icontains=query)
+                | Q(tag__title__icontains=query)).order_by('id').distinct()
+
+        return Post.objects.all().order_by('id')

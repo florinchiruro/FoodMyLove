@@ -15,4 +15,5 @@ urlpatterns = [
          name='category_detail'),
     path('tag/<slug:slug>', TagDetail.as_view(), name='tag_detail'),
     path('post-create', CreatePostView.as_view(), name='create_post'),
+    path('search/', SearchView.as_view(), name='search'),
 ]
