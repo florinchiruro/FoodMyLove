@@ -55,7 +55,7 @@
                                     {% endfor %}
                                         </ul>
                                </li>
-								<li class="nav-item"><a class="nav-link" href="archive.html">Users</a></li>
+								<li class="nav-item"><a class="nav-link" href="{% url 'users:user_list' %}">Users</a></li>
 
                                 {% if user.is_authenticated %}
 
@@ -74,7 +74,7 @@
 								<li class="nav-item"><a class="nav-link" href="{% url 'users:register' %}">Register</a></li>
 								<li class="nav-item"><a class="nav-link" href="{% url 'users:login' %}">Login</a></li>
                                 {% endif %}
-								<li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+								<!-- <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li> -->
 							</ul>
 							<ul class="nav navbar-nav navbar-right ml-auto">
 								<li class="nav-item"><a href="#" class="search"><i class="lnr lnr-magnifier"></i></a></li>
